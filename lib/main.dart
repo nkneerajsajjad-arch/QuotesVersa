@@ -1,100 +1,23 @@
+// Sweet Candy Crush - Blast Studio - Owner: Neeraj
+import 'dart:async'; import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:flutter/services.dart';
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  MobileAds.instance.initialize();
-  runApp(QuoteVerseApp());
+void main(){ WidgetsFlutterBinding.ensureInitialized(); MobileAds.instance.initialize(); runApp(SweetCandyApp());}
+class SweetCandyApp extends StatelessWidget{ @override Widget build(BuildContext context){ return MaterialApp(title: 'Sweet Candy Crush - Blast Studio', home: GameScreen(), debugShowCheckedModeBanner: false);}}
+class Candy{ double x,y; String emoji; Candy({required this.x, required this.y, required this.emoji});}
+class GameScreen extends StatefulWidget{ @override _GameScreenState createState()=>_GameScreenState();}
+class _GameScreenState extends State<GameScreen>{
+List<Candy> candies=[]; int score=0, timeLeft=30; bool isPlaying=false; Timer? gameTimer, candySpawner; Random random=Random();
+BannerAd? _bannerAd; InterstitialAd? _interstitialAd; bool _isBannerLoaded=false;
+List<String> candyEmojis=["🍬","🍭","🍫","🍩","🧁","🍪","🍰"];
+@override void initState(){ super.initState();
+_bannerAd=BannerAd(adUnitId: 'ca-app-pub-3940256099942544/6300978111', size: AdSize.banner, request: AdRequest(), listener: BannerAdListener(onAdLoaded: (_)=>setState(()=>_isBannerLoaded=true), onAdFailedToLoad: (ad,err)=>ad.dispose()))..load();
+InterstitialAd.load(adUnitId: 'ca-app-pub-3940256099942544/1033173712', request: AdRequest(), adLoadCallback: InterstitialAdLoadCallback(onAdLoaded: (ad)=>_interstitialAd=ad, onAdFailedToLoad: (err)=>{}));
 }
-
-class QuoteVerseApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'QuoteVerse',
-      theme: ThemeData(
-        primaryColor: Colors.deepPurple,
-      ),
-      home: HomeScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  BannerAd? _bannerAd;
-  bool _isAdLoaded = false;
-
-  final List<Map<String, String>> quotes = [
-    {"text": "Mehnat itni karo ki kismat bhi kahe, ab tera haq banta hai.", "cat": "Motivation"},
-    {"text": "Waqt sabko milta hai zindagi badalne ke liye, par zindagi dobara nahi milti waqt badalne ke liye.", "cat": "Life"},
-    {"text": "Attitude to apna bhi khatarnak hai, jise bhulaya usse bhula diya.", "cat": "Attitude"},
-    {"text": "Mohabbat karna asan hai, nibhana mushkil.", "cat": "Love"},
-    {"text": "Sabr rakho, behtar waqt zarur aayega.", "cat": "Sukoon"},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBannerAd();
-  }
-
-  void _loadBannerAd() {
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
-      size: AdSize.banner,
-      request: AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => _isAdLoaded = true),
-        onAdFailedToLoad: (ad, err) => ad.dispose(),
-      ),
-    )..load();
-  }
-
-  void _copy(String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Copied ✓'), backgroundColor: Colors.deepPurple),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('QuoteVerse ✨', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.deepPurple,
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: quotes.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(quotes[index]["text"]!),
-                    subtitle: Text("#${quotes[index]["cat"]!}"),
-                    trailing: IconButton(
-                      icon: Icon(Icons.copy, color: Colors.deepPurple),
-                      onPressed: () => _copy(quotes[index]["text"]!),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          if (_isAdLoaded) Container(height: 60, child: AdWidget(ad: _bannerAd!)),
-        ],
-      ),
-    );
-  }
-}
+void startGame(){ setState((){ score=0; timeLeft=30; candies.clear(); isPlaying=true;});
+gameTimer=Timer.periodic(Duration(seconds: 1),(t){ setState(()=>timeLeft--); if(timeLeft<=0) endGame();});
+candySpawner=Timer.periodic(Duration(milliseconds: 500),(t){ if(!isPlaying) return; setState((){ candies.add(Candy(x: random.nextDouble(), y: 0, emoji: candyEmojis[random.nextInt(candyEmojis.length)]));}); for(var c in candies) c.y+=0.04; candies.removeWhere((c)=>c.y>1.2);});}
+void endGame(){ gameTimer?.cancel(); candySpawner?.cancel(); setState(()=>isPlaying=false); _interstitialAd?.show(); showDialog(context: context, builder: (_)=>AlertDialog(title: Text('🏆 Game Over!'), content: Text('Sweet Candy Crush - Blast Studio\nOwner: Neeraj\nScore: $score'), actions: [TextButton(onPressed: (){ Navigator.pop(context); startGame();}, child: Text('PLAY AGAIN'))]));}
+@override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: Text('Sweet Candy Crush - Blast Studio 🍬', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)), backgroundColor: Color(0xFFAD1457), foregroundColor: Colors.white, actions: [Padding(padding: EdgeInsets.all(12), child: Text('Score: $score', style: TextStyle(fontWeight: FontWeight.bold)))]),
+body: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFFCE4EC), Color(0xFFF8BBD0)])), child: isPlaying? Stack(children: List.generate(candies.length, (i)=>Positioned(left: MediaQuery.of(context).size.width*candies[i].x, top: MediaQuery.of(context).size.height*candies[i].y, child: GestureDetector(onTap: ()=>setState((){ score+=10; candies.removeAt(i);}), child: Text(candies[i].emoji, style: TextStyle(fontSize: 45)))))): Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.extension, size: 80, color: Color(0xFFAD1457)), SizedBox(height: 10), Text('Sweet Candy Crush', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFFAD1457))), Text('Blast Studio - By Neeraj', style: TextStyle(letterSpacing: 2)), SizedBox(height: 25), ElevatedButton(onPressed: startGame, style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFAD1457), padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15)), child: Text('PLAY NOW', style: TextStyle(color: Colors.white)))]))),
+bottomNavigationBar: _isBannerLoaded? Container(height: 60, child: AdWidget(ad: _bannerAd!)): null,);}}
